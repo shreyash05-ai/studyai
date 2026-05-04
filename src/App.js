@@ -8,6 +8,7 @@ import Goals from "./Goals";
 import Concepts from "./Concepts";
 import MockTest from "./MockTest";
 import AIMentor from "./AIMentor";
+import Habits from "./Habits";
 import Leaderboard from "./Leaderboard";
 import InterviewResources from "./InterviewResources";
 import Sidebar from "./components/Sidebar";
@@ -89,6 +90,8 @@ function App() {
         return <MockTest user={user} userData={userData} updateUserData={updateUserData} isPremium={user.isPremium} onUpgrade={handleUpgrade} />;
       case "chat":
         return <AIMentor user={user} userData={userData} />;
+      case "habits":
+        return <Habits userData={userData} updateUserData={updateUserData} />;
       case "leaderboard":
         return <Leaderboard user={user} userData={userData} />;
       case "interview":

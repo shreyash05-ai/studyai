@@ -95,7 +95,7 @@ export default function AIMentor({ user, userData }) {
 
       {/* Chat Window */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ height: 420, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ height: 'min(420px, 60vh)', overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
           {messages.map((m, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
               {m.role === 'assistant' && (
@@ -135,7 +135,7 @@ export default function AIMentor({ user, userData }) {
         </div>
 
         {/* Quick Suggestions */}
-        <div style={{ padding: '10px 20px', borderTop: '1px solid #1e2d4a', display: 'flex', gap: 8, overflowX: 'auto' }}>
+        <div style={{ padding: '10px 20px', borderTop: '1px solid #1e2d4a', display: 'flex', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           {suggestions.map((s, i) => (
             <button key={i} onClick={() => send(s)}
               style={{ padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(0,212,255,0.3)', background: 'rgba(0,212,255,0.05)', color: '#00d4ff', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 600 }}>
@@ -145,7 +145,7 @@ export default function AIMentor({ user, userData }) {
         </div>
 
         {/* Input */}
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #1e2d4a', display: 'flex', gap: 10 }}>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid #1e2d4a', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <input
             className="input-field"
             placeholder={isInterview ? 'Ask about DSA, system design, interviews...' : 'Ask your AI mentor anything...'}

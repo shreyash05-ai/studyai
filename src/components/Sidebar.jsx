@@ -49,7 +49,7 @@ export default function Sidebar({ tab, setTab, user, open, onClose, onUpgrade })
 
       {!user.isPremium && !user.isAdmin && (
         <div style={{ padding: 16, borderTop: '1px solid #1e2d4a' }}>
-          <button onClick={onUpgrade} className="gradient-btn" style={{ width: '100%', padding: '10px', borderRadius: 12, border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
+          <button onClick={() => onUpgrade('monthly')} className="gradient-btn" style={{ width: '100%', padding: '10px', borderRadius: 12, border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
             ⚡ Upgrade — $5/mo
           </button>
         </div>

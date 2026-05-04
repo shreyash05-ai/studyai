@@ -52,7 +52,7 @@ export default function Dashboard({ user, userData, onUpgrade }) {
             <span style={{ color: '#f59e0b', fontWeight: 700 }}>⏳ {user.trialDays} days left in your free trial</span>
             <p style={{ color: '#64748b', fontSize: 13, marginTop: 2 }}>Upgrade to keep all data and unlimited AI features</p>
           </div>
-          <button onClick={onUpgrade} className="gradient-btn" style={{ padding: '8px 20px', borderRadius: 10, border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Upgrade Now ⚡</button>
+          <button onClick={() => onUpgrade('monthly')} className="gradient-btn" style={{ padding: '8px 20px', borderRadius: 10, border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Upgrade Now ⚡</button>
         </div>
       )}
 

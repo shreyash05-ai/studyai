@@ -71,7 +71,7 @@ export default function MockTest({ user, userData, updateUserData, isPremium, on
         {!isPremium && (
           <div style={{ padding: '10px 16px', borderRadius: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <span style={{ color: '#f59e0b', fontSize: 13 }}>⚡ Free trial: 5 tests/day. Upgrade for unlimited.</span>
-            <button onClick={onUpgrade} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: '#f59e0b', color: '#0d1629', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>Upgrade</button>
+            <button onClick={() => onUpgrade('monthly')} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: '#f59e0b', color: '#0d1629', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>Upgrade</button>
           </div>
         )}
 
