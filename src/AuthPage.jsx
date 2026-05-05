@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Brain, Shield, AlertCircle } from 'lucide-react';
 import { ADMIN_SECRET_KEY, STUDY_MODES } from './utils/constants';
-import { getAdmins, setAdmins, getStudents, setStudents, setUserData, createFreshUserData } from './utils/storage';
+import { getUser, saveUser, setUserData, createFreshUserData } from './utils/storage';
 
 export default function AuthPage({ mode, onAuth, onSwitch, onBack }) {
   const isAdminLogin = mode === 'admin-login';
@@ -26,37 +26,48 @@ export default function AuthPage({ mode, onAuth, onSwitch, onBack }) {
     if (isRegister && !form.name) { setError('Name is required'); return; }
     if (isRegister && form.password !== form.confirmPassword) { setError('Passwords do not match'); return; }
     if (isRegister && form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
-    if (isAdminRegister && form.secretKey !== ADMIN_SECRET_KEY) { setError('❌ Invalid secret key. Admin registration denied.'); return; }
+    if (isAdminRegister && form.secretKey !== ADMIN_SECRET_KEY) { setError('❌ Invalid secret key.'); return; }
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-
-    const admins = getAdmins();
-    const students = getStudents();
     const email = form.email.toLowerCase();
 
-    if (isAdminRegister) {
-      if (admins.find(a => a.email === email)) { setError('Admin with this email already exists.'); setLoading(false); return; }
-      const newAdmin = { name: form.name, email, password: form.password, isAdmin: true, isPremium: true, plan: 'admin', trialDays: 9999, studyMode: form.studyMode, examName: form.examName, examDate: form.examDate, dailyGoal: parseInt(form.dailyGoal) || 3, registeredAt: new Date().toISOString() };
-      setAdmins([...admins, newAdmin]);
-      setUserData(email, createFreshUserData(form.studyMode));
-      onAuth(newAdmin);
-    } else if (isAdminLogin) {
-      const admin = admins.find(a => a.email === email && a.password === form.password);
-      if (!admin) { setError('Invalid admin credentials.'); setLoading(false); return; }
-      onAuth(admin);
-    } else if (isRegister) {
-      if (students.find(s => s.email === email) || admins.find(a => a.email === email)) { setError('An account with this email already exists.'); setLoading(false); return; }
-      const newStudent = { name: form.name, email, password: form.password, isAdmin: false, isPremium: false, plan: null, trialDays: 10, studyMode: form.studyMode, examName: form.examName, examDate: form.examDate, dailyGoal: parseInt(form.dailyGoal) || 3, registeredAt: new Date().toISOString() };
-      setStudents([...students, newStudent]);
-      setUserData(email, createFreshUserData(form.studyMode));
-      onAuth(newStudent);
-    } else {
-      const student = students.find(s => s.email === email && s.password === form.password);
-      if (student) { onAuth(student); return; }
-      const admin = admins.find(a => a.email === email && a.password === form.password);
-      if (admin) { onAuth(admin); return; }
-      setError('Invalid email or password.');
+    try {
+      if (isRegister) {
+        const existing = await getUser(email);
+        if (existing) { setError('An account with this email already exists.'); setLoading(false); return; }
+
+        const newUser = {
+          name: form.name, email, password: form.password,
+          isAdmin: isAdminRegister,
+          isPremium: isAdminRegister,
+          plan: isAdminRegister ? 'admin' : null,
+          trialDays: isAdminRegister ? 9999 : 10,
+          studyMode: form.studyMode,
+          examName: form.examName,
+          examDate: form.examDate,
+          dailyGoal: parseInt(form.dailyGoal) || 3,
+          registeredAt: new Date().toISOString()
+        };
+        await saveUser(newUser);
+        await setUserData(email, createFreshUserData(form.studyMode));
+        onAuth(newUser);
+      } else {
+        const user = await getUser(email);
+        if (!user || user.password !== form.password) {
+          setError('Invalid email or password.');
+          setLoading(false);
+          return;
+        }
+        if (isAdminLogin && !user.isAdmin) {
+          setError('Not an admin account.');
+          setLoading(false);
+          return;
+        }
+        onAuth(user);
+      }
+    } catch (e) {
+      setError('Something went wrong. Please try again.');
+      console.error(e);
     }
     setLoading(false);
   };
@@ -74,7 +85,7 @@ export default function AuthPage({ mode, onAuth, onSwitch, onBack }) {
             {isAdminLogin ? '🛡️ Admin Login' : isAdminRegister ? '🛡️ Admin Registration' : isRegister ? 'Start Your Journey' : 'Welcome Back'}
           </h1>
           <p style={{ color: '#64748b', marginTop: 6, fontSize: 14 }}>
-            {isAdminLogin ? 'Sign in with your admin credentials' : isAdminRegister ? 'Register with secret key' : isRegister ? '10 days free · No credit card needed' : 'Sign in to continue'}
+            {isAdminLogin ? 'Sign in with admin credentials' : isAdminRegister ? 'Register with secret key' : isRegister ? '10 days free · No credit card needed' : 'Sign in to continue'}
           </p>
         </div>
 
@@ -110,7 +121,7 @@ export default function AuthPage({ mode, onAuth, onSwitch, onBack }) {
             {isAdminRegister && (
               <div>
                 <label style={{ color: '#64748b', fontSize: 12, marginBottom: 6, display: 'block', fontWeight: 700 }}>🔑 Admin Secret Key</label>
-                <input className="input-field" placeholder="Enter secret key to register as admin" type="password" value={form.secretKey} onChange={e => set('secretKey', e.target.value)} />
+                <input className="input-field" placeholder="Enter secret key" type="password" value={form.secretKey} onChange={e => set('secretKey', e.target.value)} />
               </div>
             )}
 
@@ -123,11 +134,11 @@ export default function AuthPage({ mode, onAuth, onSwitch, onBack }) {
                   </select>
                 </div>
                 <div>
-                  <label style={{ color: '#64748b', fontSize: 12, marginBottom: 6, display: 'block', fontWeight: 700 }}>{form.studyMode === 'interview' ? 'Target Interview Date' : 'Exam Date'}</label>
+                  <label style={{ color: '#64748b', fontSize: 12, marginBottom: 6, display: 'block', fontWeight: 700 }}>{form.studyMode === 'interview' ? 'Target Date' : 'Exam Date'}</label>
                   <input className="input-field" type="date" value={form.examDate} onChange={e => set('examDate', e.target.value)} />
                 </div>
                 <div>
-                  <label style={{ color: '#64748b', fontSize: 12, marginBottom: 6, display: 'block', fontWeight: 700 }}>Daily Study Goal (hours)</label>
+                  <label style={{ color: '#64748b', fontSize: 12, marginBottom: 6, display: 'block', fontWeight: 700 }}>Daily Study Goal</label>
                   <select className="input-field" value={form.dailyGoal} onChange={e => set('dailyGoal', e.target.value)}>
                     {['1','2','3','4','5','6','7','8'].map(h => <option key={h} value={h}>{h} hour{h !== '1' ? 's' : ''}/day</option>)}
                   </select>
