@@ -3,29 +3,55 @@ import { X } from 'lucide-react';
 
 export default function PaymentModal({ plan, onClose, onSuccess }) {
   const [region, setRegion] = useState('india');
-  const [payTab, setPayTab] = useState('upi');
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
 
-  const handlePay = async () => {
-    setProcessing(true);
-    await new Promise(r => setTimeout(r, 2800));
-    setProcessing(false); setDone(true);
-    setTimeout(onSuccess, 2000);
-  };
-
   const priceINR = plan === 'monthly' ? 415 : 4150;
   const priceUSD = plan === 'monthly' ? 5 : 50;
+
+  const handleRazorpay = () => {
+    setProcessing(true);
+    const options = {
+      key: process.env.REACT_APP_RAZORPAY_KEY,
+      amount: priceINR * 100, // paise
+      currency: 'INR',
+      name: 'StudyAI',
+      description: plan === 'monthly' ? 'Monthly Premium' : 'Yearly Premium',
+      handler: function (response) {
+        setProcessing(false);
+        setDone(true);
+        setTimeout(onSuccess, 2000);
+      },
+      prefill: { name: '', email: '' },
+      theme: { color: '#00d4ff' },
+      modal: {
+        ondismiss: () => setProcessing(false)
+      }
+    };
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  };
+
+  const handleStripe = () => {
+    // For now simulate — replace with real Stripe when ready
+    setProcessing(true);
+    setTimeout(() => {
+      setProcessing(false);
+      setDone(true);
+      setTimeout(onSuccess, 2000);
+    }, 2000);
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}>
       <div className="card fade-up" style={{ width: '100%', maxWidth: 440, padding: 28, position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={20} /></button>
+
         {done ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
             <h2 className="font-display" style={{ fontSize: 24, fontWeight: 800, color: 'white', marginBottom: 8 }}>Payment Successful!</h2>
-            <p style={{ color: '#64748b' }}>Welcome to StudyAI Premium</p>
+            <p style={{ color: '#64748b' }}>Welcome to StudyAI Premium ⚡</p>
           </div>
         ) : (
           <>
@@ -37,72 +63,37 @@ export default function PaymentModal({ plan, onClose, onSuccess }) {
               <p style={{ color: '#64748b', fontSize: 13 }}>{plan === 'monthly' ? 'per month' : 'per year · save 17%'}</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-              {[['india','🇮🇳','India','UPI · Cards · Net Banking'],['international','🌍','International','Cards · PayPal · Stripe']].map(([r,flag,name,sub]) => (
-                <button key={r} onClick={() => setRegion(r)} style={{ padding: '12px 8px', borderRadius: 12, border: `2px solid ${region===r?'#00d4ff':'#1e2d4a'}`, background: region===r?'rgba(0,212,255,0.08)':'transparent', cursor: 'pointer', textAlign: 'center' }}>
-                  <div style={{ fontSize: 24, marginBottom: 4 }}>{flag}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: region===r?'#00d4ff':'#94a3b8' }}>{name}</div>
-                  <div style={{ fontSize: 11, color: '#475569' }}>{sub}</div>
+            {/* Plan toggle */}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }}>
+              <div style={{ padding: '8px 20px', borderRadius: 10, background: plan === 'monthly' ? 'rgba(0,212,255,0.15)' : 'transparent', border: `1px solid ${plan === 'monthly' ? '#00d4ff' : '#1e2d4a'}`, color: plan === 'monthly' ? '#00d4ff' : '#64748b', fontSize: 13, fontWeight: 700 }}>Monthly</div>
+              <div style={{ padding: '8px 20px', borderRadius: 10, background: plan === 'yearly' ? 'rgba(0,212,255,0.15)' : 'transparent', border: `1px solid ${plan === 'yearly' ? '#00d4ff' : '#1e2d4a'}`, color: plan === 'yearly' ? '#00d4ff' : '#64748b', fontSize: 13, fontWeight: 700 }}>Yearly · Save 17%</div>
+            </div>
+
+            {/* Region */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
+              {[['india','🇮🇳','India (Razorpay)'],['international','🌍','International']].map(([r, flag, name]) => (
+                <button key={r} onClick={() => setRegion(r)} style={{ padding: '14px 8px', borderRadius: 12, border: `2px solid ${region === r ? '#00d4ff' : '#1e2d4a'}`, background: region === r ? 'rgba(0,212,255,0.08)' : 'transparent', cursor: 'pointer', textAlign: 'center' }}>
+                  <div style={{ fontSize: 28, marginBottom: 6 }}>{flag}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: region === r ? '#00d4ff' : '#94a3b8' }}>{name}</div>
                 </button>
               ))}
             </div>
 
             {region === 'india' ? (
               <>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-                  {[['upi','UPI'],['card','Card'],['netbanking','Net Banking'],['wallet','Wallets']].map(([t,l]) => (
-                    <button key={t} onClick={() => setPayTab(t)} className={`tab-btn ${payTab===t?'tab-active':'tab-inactive'}`} style={{ padding: '6px 12px', fontSize: 12 }}>{l}</button>
-                  ))}
-                </div>
-                {payTab === 'upi' && <div style={{ marginBottom: 16 }}><input className="input-field" placeholder="Enter UPI ID (name@upi)" /></div>}
-                {payTab === 'card' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                    <input className="input-field" placeholder="Card Number" />
-                    <input className="input-field" placeholder="Name on Card" />
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                      <input className="input-field" placeholder="MM / YY" />
-                      <input className="input-field" placeholder="CVV" />
-                    </div>
-                  </div>
-                )}
-                {payTab === 'netbanking' && (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-                    {['SBI','HDFC','ICICI','Axis','Kotak','PNB'].map(b => (
-                      <button key={b} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #1e2d4a', background: '#060d1f', color: '#94a3b8', fontSize: 13, cursor: 'pointer' }}>{b}</button>
-                    ))}
-                  </div>
-                )}
-                {payTab === 'wallet' && (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-                    {['Paytm Wallet','Mobikwik','Freecharge','Airtel Money'].map(w => (
-                      <button key={w} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #1e2d4a', background: '#060d1f', color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}>{w}</button>
-                    ))}
-                  </div>
-                )}
-                <button onClick={handlePay} disabled={processing} className="gradient-btn" style={{ width: '100%', padding: '13px', borderRadius: 12, border: 'none', color: 'white', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>
-                  {processing ? 'Processing...' : `Pay ₹${priceINR} →`}
+                <button onClick={handleRazorpay} disabled={processing} className="gradient-btn"
+                  style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', color: 'white', fontWeight: 700, fontSize: 16, cursor: processing ? 'not-allowed' : 'pointer', opacity: processing ? 0.8 : 1, marginBottom: 8 }}>
+                  {processing ? '⏳ Opening Payment...' : `Pay ₹${priceINR} with Razorpay →`}
                 </button>
-                <p style={{ textAlign: 'center', color: '#475569', fontSize: 12, marginTop: 8 }}>🔒 Secured by Razorpay · SSL Encrypted</p>
+                <p style={{ textAlign: 'center', color: '#475569', fontSize: 12 }}>🔒 UPI · Cards · Net Banking · Wallets · SSL Encrypted</p>
               </>
             ) : (
               <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                  <input className="input-field" placeholder="Card Number" />
-                  <input className="input-field" placeholder="Cardholder Name" />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <input className="input-field" placeholder="MM / YY" />
-                    <input className="input-field" placeholder="CVC" />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-                  {['PayPal','Apple Pay','Google Pay','Klarna'].map(m => (
-                    <button key={m} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #1e2d4a', background: '#060d1f', color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}>{m}</button>
-                  ))}
-                </div>
-                <button onClick={handlePay} disabled={processing} className="gradient-btn" style={{ width: '100%', padding: '13px', borderRadius: 12, border: 'none', color: 'white', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>
-                  {processing ? 'Processing...' : `Pay $${priceUSD} →`}
+                <button onClick={handleStripe} disabled={processing} className="gradient-btn"
+                  style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', color: 'white', fontWeight: 700, fontSize: 16, cursor: processing ? 'not-allowed' : 'pointer', opacity: processing ? 0.8 : 1, marginBottom: 8 }}>
+                  {processing ? '⏳ Processing...' : `Pay $${priceUSD} →`}
                 </button>
-                <p style={{ textAlign: 'center', color: '#475569', fontSize: 12, marginTop: 8 }}>🔒 Secured by Stripe · SSL Encrypted</p>
+                <p style={{ textAlign: 'center', color: '#475569', fontSize: 12 }}>🔒 Secured by Stripe · SSL Encrypted</p>
               </>
             )}
           </>
